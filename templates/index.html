@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mikrotik RouterBoard Provisioner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-section, .status-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .form-section h2, .status-section h2 {
+            margin-bottom: 20px;
+            color: #4a5568;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="password"],
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .required {
+            color: #e53e3e;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status-display {
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            min-height: 300px;
+            padding: 20px;
+            background-color: #f7fafc;
+            font-family: 'Courier New', monospace;
+        }
+
+        .status-message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #4a5568;
+        }
+
+        .status-message.info {
+            background-color: #ebf8ff;
+            border-left-color: #3182ce;
+            color: #2c5282;
+        }
+
+        .status-message.success {
+            background-color: #f0fff4;
+            border-left-color: #38a169;
+            color: #22543d;
+        }
+
+        .status-message.error {
+            background-color: #fed7d7;
+            border-left-color: #e53e3e;
+            color: #742a2a;
+        }
+
+        .status-message.warning {
+            background-color: #fffbeb;
+            border-left-color: #d69e2e;
+            color: #744210;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #e2e8f0;
+            border-radius: 4px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 4px;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 5px;
+            font-size: 14px;
+            color: #4a5568;
+        }
+
+        .expandable-section {
+            margin-top: 20px;
+        }
+
+        .expandable-header {
+            background-color: #f7fafc;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .expandable-header:hover {
+            background-color: #edf2f7;
+        }
+
+        .expandable-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            background-color: #fafafa;
+        }
+
+        .expandable-content.expanded {
+            display: block;
+        }
+
+        .sessions-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-top: 30px;
+        }
+
+        .session-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background-color: #f7fafc;
+        }
+
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .session-mac {
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .session-time {
+            font-size: 14px;
+            color: #718096;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .alert-error {
+            background-color: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #feb2b2;
+        }
+
+        .alert-success {
+            background-color: #f0fff4;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛠️ Mikrotik RouterBoard Provisioner</h1>
+            <p>Automated RouterOS device configuration and provisioning</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Configuration Form -->
+            <div class="form-section">
+                <h2>Router Configuration</h2>
+                
+                <form id="provisionForm">
+                    <div class="form-group">
+                        <label for="macAddress">Router MAC Address <span class="required">*</span></label>
+                        <input type="text" id="macAddress" name="mac_address" required placeholder="XX:XX:XX:XX:XX:XX">
+                        <small>Enter the MAC address of the router to provision</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sshPassword">SSH Password</label>
+                        <input type="password" id="sshPassword" name="ssh_password" placeholder="Leave empty for default access">
+                        <small>SSH password for router access (leave empty for routers with no password)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="lanIp">LAN IP Address <span class="required">*</span></label>
+                        <input type="text" id="lanIp" name="lan_ip" value="192.168.188.1/24" required>
+                        <small>LAN IP address with subnet (e.g., 192.168.188.1/24)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pppoeUsername">PPPoE Username</label>
+                        <input type="text" id="pppoeUsername" name="pppoe_username" placeholder="your-isp-username">
+                        <small>Username for PPPoE internet connection</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pppoePassword">PPPoE Password</label>
+                        <input type="password" id="pppoePassword" name="pppoe_password" placeholder="your-isp-password">
+                        <small>Password for PPPoE internet connection</small>
+                    </div>
+
+                    <!-- Expandable Advanced Options -->
+                    <div class="expandable-section">
+                        <div class="expandable-header" onclick="toggleExpandable('advancedOptions')">
+                            <span>🔧 Advanced Options</span>
+                            <span id="advancedToggle">▼</span>
+                        </div>
+                        <div class="expandable-content" id="advancedOptions">
+                            <div class="form-group">
+                                <label for="wifiSsid">WiFi SSID</label>
+                                <input type="text" id="wifiSsid" name="wifi_ssid" placeholder="MyNetwork">
+                                <small>Wireless network name (if router has WiFi)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="wifiPassword">WiFi Password</label>
+                                <input type="password" id="wifiPassword" name="wifi_password" placeholder="WiFi password">
+                                <small>WPA2 password for wireless network</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="vlanIds">VLAN IDs</label>
+                                <input type="text" id="vlanIds" name="vlan_ids" placeholder="10, 20, 30">
+                                <small>Comma-separated list of VLAN IDs to configure</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="bandwidthLimit">Bandwidth Limit</label>
+                                <input type="text" id="bandwidthLimit" name="bandwidth_limit" placeholder="100M/20M">
+                                <small>Total bandwidth limit (download/upload, e.g., 100M/20M)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="portForwards">Port Forwards</label>
+                                <textarea id="portForwards" name="port_forwards" rows="3" placeholder="80:192.168.1.100:8080, 443:192.168.1.100:8443"></textarea>
+                                <small>Port forwarding rules: external_port:internal_ip:internal_port (one per line or comma-separated)</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px;">
+                        <button type="submit" class="btn-primary" id="provisionBtn">
+                            <span id="btnText">🚀 Start Provisioning</span>
+                            <span id="btnSpinner" class="loading-spinner" style="display: none;"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Status Display -->
+            <div class="status-section">
+                <h2>Provisioning Status</h2>
+                
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" id="progressBar"></div>
+                </div>
+                <div class="progress-text" id="progressText">Ready to start provisioning</div>
+
+                <div class="status-display" id="statusDisplay">
+                    <div class="status-message info">
+                        <strong>Ready:</strong> Fill in the router configuration and click "Start Provisioning" to begin.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Sessions -->
+        <div class="sessions-section">
+            <h2>📊 Recent Provisioning Sessions</h2>
+            <div id="sessionsList">
+                <p style="text-align: center; color: #718096; font-style: italic;">No recent sessions</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSession = null;
+        let eventSource = null;
+
+        // Form submission handler
+        document.getElementById('provisionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Collect additional parameters
+            const additionalParams = {};
+            if (data.wifi_ssid) additionalParams.wifi_ssid = data.wifi_ssid;
+            if (data.wifi_password) additionalParams.wifi_password = data.wifi_password;
+            if (data.vlan_ids) additionalParams.vlan_ids = data.vlan_ids;
+            if (data.bandwidth_limit) additionalParams.bandwidth_limit = data.bandwidth_limit;
+            if (data.port_forwards) additionalParams.port_forwards = data.port_forwards;
+            
+            // Clean up form data and add additional params
+            delete data.wifi_ssid;
+            delete data.wifi_password;
+            delete data.vlan_ids;
+            delete data.bandwidth_limit;
+            delete data.port_forwards;
+            
+            if (Object.keys(additionalParams).length > 0) {
+                data.additional_params = additionalParams;
+            }
+
+            try {
+                updateButtonState(true);
+                clearStatusDisplay();
+                
+                const response = await fetch('/provision', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    currentSession = result.session_id;
+                    startStatusStream(result.session_id);
+                    addStatusMessage('Session started successfully', 'success');
+                } else {
+                    addStatusMessage(`Error: ${result.error}`, 'error');
+                    updateButtonState(false);
+                }
+
+            } catch (error) {
+                addStatusMessage(`Network error: ${error.message}`, 'error');
+                updateButtonState(false);
+            }
+        });
+
+        // Start Server-Sent Events stream for real-time updates
+        function startStatusStream(sessionId) {
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            eventSource = new EventSource(`/status/stream/${sessionId}`);
+            
+            eventSource.onmessage = function(event) {
+                const status = JSON.parse(event.data);
+                updateStatusDisplay(status);
+            };
+
+            eventSource.onerror = function(event) {
+                console.error('EventSource failed:', event);
+                addStatusMessage('Lost connection to status stream', 'warning');
+                eventSource.close();
+                updateButtonState(false);
+            };
+        }
+
+        // Update status display with real-time information
+        function updateStatusDisplay(status) {
+            const progress = calculateProgress(status);
+            updateProgressBar(progress.percent, progress.stage);
+            
+            // Add latest message if new
+            if (status.updates && status.updates.length > 0) {
+                const latestUpdate = status.updates[status.updates.length - 1];
+                addStatusMessage(
+                    `[${latestUpdate.formatted_time}] ${latestUpdate.message}`,
+                    latestUpdate.type
+                );
+            }
+
+            // Check if completed
+            if (status.is_complete) {
+                updateButtonState(false);
+                if (eventSource) {
+                    eventSource.close();
+                }
+                loadRecentSessions();
+            }
+        }
+
+        // Calculate provisioning progress
+        function calculateProgress(status) {
+            if (!status.updates) {
+                return { percent: 0, stage: 'Starting' };
+            }
+
+            const updates = status.updates;
+            let percent = 0;
+            let stage = 'Starting';
+
+            for (const update of updates) {
+                const message = update.message.toLowerCase();
+                
+                if (message.includes('scanning')) {
+                    percent = Math.max(percent, 20);
+                    stage = 'Scanning Network';
+                } else if (message.includes('found')) {
+                    percent = Math.max(percent, 35);
+                    stage = 'Router Found';
+                } else if (message.includes('connecting')) {
+                    percent = Math.max(percent, 50);
+                    stage = 'Connecting';
+                } else if (message.includes('sent') || message.includes('base configuration')) {
+                    percent = Math.max(percent, 70);
+                    stage = 'Config Sent';
+                } else if (message.includes('generating')) {
+                    percent = Math.max(percent, 80);
+                    stage = 'Generating Config';
+                } else if (message.includes('waiting')) {
+                    percent = Math.max(percent, 90);
+                    stage = 'Finalizing';
+                } else if (message.includes('completed') || update.type === 'success') {
+                    percent = 100;
+                    stage = 'Completed';
+                } else if (update.type === 'error') {
+                    stage = 'Error';
+                }
+            }
+
+            return { percent, stage };
+        }
+
+        // Update progress bar
+        function updateProgressBar(percent, stage) {
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            
+            progressBar.style.width = `${percent}%`;
+            progressText.textContent = `${stage} (${percent}%)`;
+        }
+
+        // Add status message to display
+        function addStatusMessage(message, type = 'info') {
+            const statusDisplay = document.getElementById('statusDisplay');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `status-message ${type}`;
+            messageDiv.innerHTML = `<strong>${type.charAt(0).toUpperCase() + type.slice(1)}:</strong> ${message}`;
+            
+            statusDisplay.appendChild(messageDiv);
+            statusDisplay.scrollTop = statusDisplay.scrollHeight;
+        }
+
+        // Clear status display
+        function clearStatusDisplay() {
+            const statusDisplay = document.getElementById('statusDisplay');
+            statusDisplay.innerHTML = '';
+            updateProgressBar(0, 'Starting');
+        }
+
+        // Update button state
+        function updateButtonState(isProvisioning) {
+            const btn = document.getElementById('provisionBtn');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            
+            if (isProvisioning) {
+                btn.disabled = true;
+                btnText.textContent = '⏳ Provisioning...';
+                btnSpinner.style.display = 'inline-block';
+            } else {
+                btn.disabled = false;
+                btnText.textContent = '🚀 Start Provisioning';
+                btnSpinner.style.display = 'none';
+            }
+        }
+
+        // Toggle expandable sections
+        function toggleExpandable(id) {
+            const content = document.getElementById(id);
+            const toggle = document.getElementById('advancedToggle');
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                toggle.textContent = '▼';
+            } else {
+                content.classList.add('expanded');
+                toggle.textContent = '▲';
+            }
+        }
+
+        // Load recent sessions
+        async function loadRecentSessions() {
+            try {
+                const response = await fetch('/sessions');
+                const sessions = await response.json();
+                
+                const sessionsList = document.getElementById('sessionsList');
+                
+                if (Object.keys(sessions).length === 0) {
+                    sessionsList.innerHTML = '<p style="text-align: center; color: #718096; font-style: italic;">No recent sessions</p>';
+                    return;
+                }
+
+                let html = '';
+                const sortedSessions = Object.entries(sessions).sort((a, b) => 
+                    new Date(b[1].created_at) - new Date(a[1].created_at)
+                ).slice(0, 5); // Show last 5 sessions
+
+                for (const [sessionId, session] of sortedSessions) {
+                    const createdAt = new Date(session.created_at).toLocaleString();
+                    const status = session.status || 'Unknown';
+                    
+                    html += `
+                        <div class="session-item">
+                            <div class="session-header">
+                                <span class="session-mac">${session.mac_address}</span>
+                                <span class="session-time">${createdAt}</span>
+                            </div>
+                            <div>Status: ${status}</div>
+                            <div>LAN IP: ${session.lan_ip || 'N/A'}</div>
+                            ${session.pppoe_username ? `<div>PPPoE User: ${session.pppoe_username}</div>` : ''}
+                        </div>
+                    `;
+                }
+
+                sessionsList.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+            }
+        }
+
+        // Load recent sessions on page load
+        document.addEventListener('DOMContentLoaded', loadRecentSessions);
+
+        // Auto-refresh sessions every 30 seconds
+        setInterval(loadRecentSessions, 30000);
+    </script>
+</body>
+</html>
